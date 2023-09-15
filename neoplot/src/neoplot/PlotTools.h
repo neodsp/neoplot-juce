@@ -6,6 +6,7 @@
 #include "PlotData.h"
 #include "PlotType.h"
 #include "PlotSettings.h"
+#include "../libInterpolate/Interpolate.hpp"
 
 namespace neo::plot
 {
@@ -195,7 +196,7 @@ void transformData(const PlotSettings<T>& settings, PlotData<T>& data)
                          / static_cast<T>(settings.plotBounds.getWidth());
         const T remainder = window - static_cast<int>(window);
         T running_remainder = remainder;
-        std::size_t windowToUse = 0;
+        std::size_t windowToUse;
         std::size_t moving_start = start;
         for (size_t i = 0; i < settings.plotBounds.getWidth(); i++)
         {
@@ -303,5 +304,77 @@ static inline void lin_to_db(std::vector<T>& lin)
 {
     std::transform(
         lin.begin(), lin.end(), lin.begin(), [](auto& item) { return lin_to_db(item); });
+}
+
+template <typename T>
+static auto warp(std::vector<T>& magnitude) -> std::vector<T>
+{
+    // linearly and logarithmically spaced frequency bins
+    auto N = magnitude.size();
+    std::vector<T> n_lin(N), n_log(N);
+    std::iota(n_lin.begin(), n_lin.end(), 1.);
+    std::iota(n_log.begin(), n_log.end(), 0.);
+    std::for_each(n_log.begin(),
+                  n_log.end(),
+                  [&](auto& item)
+                  { item = std::pow(N, item / static_cast<T>((N - 1))); });
+
+    _1D::CubicSplineInterpolator<double> interp;
+    interp.setData(N, n_lin.data(), magnitude.data());
+
+    std::for_each(n_log.begin(), n_log.end(), [&](auto& item) { item = interp(item); });
+
+    return n_log;
+}
+
+template <typename T>
+static auto smooth_warped(const std::vector<T>& warped, int num_fractions, bool hanning = true)
+    -> std::vector<T>
+{
+    auto N = warped.size();
+    std::vector<T> n_lin(N), n_log(N);
+    std::iota(n_lin.begin(), n_lin.end(), 1.);
+    std::iota(n_log.begin(), n_log.end(), 0.);
+    std::for_each(n_log.begin(),
+                  n_log.end(),
+                  [&](auto& item)
+                  { item = std::pow(N, item / static_cast<T>((N - 1))); });
+
+    // frequency bin spacing in octaves: log2(n_log[n]/n_log[n-1])
+    // Note: n_log[0] = 1
+    auto delta_n_old = std::log2(n_log[1]);
+    auto delta_n = std::log2(std::pow(N, 1. / static_cast<T>((N - 1))));
+    assert(delta_n_old == delta_n);
+
+    // width of the window in logarithmically spaced samples
+    // Note: Forcing the window to have an odd length increases the deviation
+    //       from the exact width, but makes sure that the delay introduced in
+    //       the convolution is integer and can be easily compensated
+    auto n_window = static_cast<int>(
+        2 * std::floor(1. / static_cast<double>(num_fractions * delta_n * 2)) + 1);
+
+    // generate window
+    std::vector<T> window(n_window, 1);
+    if (hanning)
+    {
+        hanning_window(window);
+    }
+    auto windowSum = std::reduce(window.begin(), window.end());
+
+    std::vector<T> tmpVec;
+    std::copy(warped.cbegin(), warped.cend(), std::back_inserter(tmpVec));
+
+    tmpVec.resize(warped.size() + n_window);
+
+    // convolve window
+    auto temp = convolve(window, tmpVec);
+    auto index = size_t(n_window / 2);
+    auto smoothed = std::vector<T>(warped.size());
+    for (size_t i = 0; i < warped.size(); ++i)
+    {
+        smoothed[i] = temp[index + i] / static_cast<T>(windowSum);
+    }
+
+    return smoothed;
 }
 } // namespace neo::plot

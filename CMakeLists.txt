@@ -22,39 +22,33 @@ set_property(GLOBAL PROPERTY USE_FOLDERS YES)
 Include(FetchContent)
 
 FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        v3.0.0-preview3
-)
-FetchContent_MakeAvailable(Catch2)
-
-FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG        8.1.1
-)
-FetchContent_MakeAvailable(fmt)
-
-FetchContent_Declare(
-        juce
-        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-        GIT_TAG develop        
-        GIT_PROGRESS TRUE
+        boost
+        GIT_REPOSITORY https://github.com/boostorg/boost
+        GIT_TAG boost-1.83.0
         GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
 )
-FetchContent_MakeAvailable(juce)
+FetchContent_MakeAvailable(boost)
 
 FetchContent_Declare(
         Eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG master
+        GIT_TAG 3.4.1
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE)
 set(EIGEN_BUILD_DOC OFF)
 set(BUILD_TESTING OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
-set( OFF)
 FetchContent_MakeAvailable(Eigen)
+
+FetchContent_Declare(
+        juce
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG 7.0.7
+        GIT_PROGRESS TRUE
+        GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(juce)
 # ###############################################################################
 
 option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Enable Module Source Groups" ON)

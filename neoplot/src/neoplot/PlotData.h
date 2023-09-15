@@ -20,6 +20,7 @@ struct PlotData
 
     bool visible = true;
     bool isWaveform = false;
+    bool isAlreadyWarped = false;
     bool hovered = false;
 
     explicit PlotData(std::size_t initialSize = 0,

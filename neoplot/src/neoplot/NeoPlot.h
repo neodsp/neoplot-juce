@@ -84,6 +84,11 @@ public:
 
     void addData(PlotData<T>& data, bool fitBounds = true)
     {
+        if (settings.type == PlotType::logarithmic && !data.isAlreadyWarped)
+        {
+            data.xData = warp(data.xData);
+            data.yData = warp(data.yData);
+        }
         if (settings.yAxisInDb)
         {
             plot::lin_to_db(data.yData);
