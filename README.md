@@ -30,7 +30,7 @@ Include(FetchContent)
 FetchContent_Declare(
         neoplot
         GIT_REPOSITORY https://github.com/neodsp/neoplot.git
-        GIT_TAG        master
+        GIT_TAG        main
 )
 FetchContent_MakeAvailable(neoplot)
 
